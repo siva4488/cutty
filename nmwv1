@@ -1,0 +1,163 @@
+
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+
+const int relayPin1 = D1;
+const int relayPin2 = D2;
+const int relayPin3 = D3;
+const char* mqttServerURL = "mqtt server ip address";
+
+// Update these with values suitable for your network.
+const char* ssid = "SSID";
+const char* password = "SSID_Password";
+
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
+
+void setup()
+{
+  Serial.begin(115200);
+
+  setupWifi();
+
+  mqttClient.setServer(mqttServerURL, 1883);
+  mqttClient.setCallback(callback);
+
+  pinMode(relayPin1, OUTPUT);
+  digitalWrite(relayPin1, LOW);
+  
+  pinMode(relayPin2, OUTPUT);
+  digitalWrite(relayPin2, LOW);
+  
+  pinMode(relayPin3, OUTPUT);
+  digitalWrite(relayPin3, LOW);
+  
+  pinMode(relayPin3, OUTPUT);
+  digitalWrite(relayPin3, LOW);
+}
+
+void loop()
+{
+  if (!mqttClient.connected())
+  {
+    connectToMQTT();
+  }
+  mqttClient.loop();
+}
+
+void setupWifi()
+{
+  delay(100);
+
+  // We start by connecting to a WiFi network
+  Serial.print("Connecting to: ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+
+  randomSeed(micros());
+  Serial.println();
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void callback(char* topic, byte* payload, unsigned int length)
+
+{
+  if (strcmp(topic,"/home/switch1")==0){
+      Serial.print("Command from MQTT broker is : ");
+      Serial.print(topic);
+    
+      bool turnOnRelay = payload[0] == '0';
+      if (turnOnRelay)
+      {
+        digitalWrite(relayPin1, LOW);
+        Serial.println(" Turn Off! " );
+      }
+      else
+      {
+        digitalWrite(relayPin1, HIGH);
+        Serial.println(" Turn On! ");
+      }
+    
+      Serial.println();
+    }
+
+ if (strcmp(topic,"/home/switch2")==0){
+      Serial.print("Command from MQTT broker is : ");
+      Serial.print(topic);
+    
+      bool turnOnRelay = payload[0] == '0';
+      if (turnOnRelay)
+      {
+        digitalWrite(relayPin2, LOW);
+        Serial.println(" Turn Off! " );
+      }
+      else
+      {
+        digitalWrite(relayPin2, HIGH);
+        Serial.println(" Turn On! ");
+      }
+    
+      Serial.println();
+    }
+
+    
+ if (strcmp(topic,"/home/switch3")==0){
+      Serial.print("Command from MQTT broker is : ");
+      Serial.print(topic);
+    
+      bool turnOnRelay = payload[0] == '0';
+      if (turnOnRelay)
+      {
+        digitalWrite(relayPin3, LOW);
+        Serial.println(" Turn Off! " );
+      }
+      else
+      {
+        digitalWrite(relayPin3, HIGH);
+        Serial.println(" Turn On! ");
+      }
+    
+      Serial.println();
+    }
+    
+}
+
+
+void connectToMQTT()
+{
+  while (!mqttClient.connected())
+  {
+    Serial.print("Attempting MQTT connection...");
+
+    // Create a random Client ID
+    String clientId = "ESP8266Client-";
+    clientId += String(random(0xffff), HEX);
+
+    // Attempt to connect
+    // if your MQTT broker has ClientID, Username and Password then change following line to // if (mqttClient.connect(clientId,userName,passWord))
+    if (mqttClient.connect(clientId.c_str(),"username","password"))
+    {
+      Serial.println("Connected.!");
+
+      // Subscribe to a topic
+      mqttClient.subscribe("/home/switch1");
+      mqttClient.subscribe("/home/switch2");
+      mqttClient.subscribe("/home/switch3");
+    }
+    else
+    {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+
+      Serial.println(" try again in 6 seconds");
+      delay(6000);
+    }
+  }
+}
